@@ -31,13 +31,23 @@ High-performance streaming pipeline that processes log files from AWS S3 and del
 
 ## Installation
 
+### System Requirements
+
+**Tested Environment:**
+- **OS**: Ubuntu 22.04 LTS (latest LTS) virtual machine
+- **Storage**: Local disk storage required for state files and encrypted credentials
+- **Architecture**: x86_64 / amd64
+
+**Note**: While other Linux distributions may work, this solution has been validated on Ubuntu 22.04 LTS with local storage.
+
 ### Prerequisites
 
 1. **EdgeDelta agent** installed and running
 2. **AWS credentials** with S3 read access (s3:GetObject, s3:ListBucket)
 3. **Root/sudo access** for installation
 4. **AWS CLI** installed (for credential validation)
-5. **Redis** (optional) - Required only for distributed deployments with multiple streamer instances
+5. **Local disk storage** for state persistence (`/var/lib/s3-streamer/`) and encrypted credentials
+6. **Redis** (optional) - Required only for distributed deployments with multiple streamer instances
 
 ### Quick Install
 
