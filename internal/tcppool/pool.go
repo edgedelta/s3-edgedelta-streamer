@@ -158,8 +158,12 @@ func (p *Pool) createConnection() (net.Conn, error) {
 
 	// Set TCP keepalive
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.SetKeepAlive(true)
-		tcpConn.SetKeepAlivePeriod(30 * time.Second)
+		if err := tcpConn.SetKeepAlive(true); err != nil {
+			return nil, fmt.Errorf("failed to set keepalive: %w", err)
+		}
+		if err := tcpConn.SetKeepAlivePeriod(30 * time.Second); err != nil {
+			return nil, fmt.Errorf("failed to set keepalive period: %w", err)
+		}
 	}
 
 	return conn, nil
@@ -168,8 +172,12 @@ func (p *Pool) createConnection() (net.Conn, error) {
 // isConnAlive checks if a connection is still alive
 func (p *Pool) isConnAlive(conn net.Conn) bool {
 	// Set a short read deadline to test connection
-	conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond))
-	defer conn.SetReadDeadline(time.Time{}) // Clear deadline
+	if err := conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond)); err != nil {
+		return false
+	}
+	defer func() {
+		_ = conn.SetReadDeadline(time.Time{}) // Clear deadline, ignore error on cleanup
+	}()
 
 	// Try to read one byte
 	one := make([]byte, 1)

@@ -78,7 +78,11 @@ func TestHTTPHealthChecker_Timeout(t *testing.T) {
 func TestHealthServer_HealthHandler(t *testing.T) {
 	checker := NewBasicHealthChecker()
 	server := NewHealthServer(":0", "/health", checker)
-	defer server.Stop(context.Background())
+	defer func() {
+		if err := server.Stop(context.Background()); err != nil {
+			t.Errorf("Failed to stop server: %v", err)
+		}
+	}()
 
 	// Create a test request
 	req := httptest.NewRequest("GET", "/health", nil)
@@ -100,7 +104,11 @@ func TestHealthServer_HealthHandler(t *testing.T) {
 func TestHealthServer_ReadyHandler(t *testing.T) {
 	checker := NewBasicHealthChecker()
 	server := NewHealthServer(":0", "/health", checker)
-	defer server.Stop(context.Background())
+	defer func() {
+		if err := server.Stop(context.Background()); err != nil {
+			t.Errorf("Failed to stop server: %v", err)
+		}
+	}()
 
 	// Create a test request
 	req := httptest.NewRequest("GET", "/ready", nil)

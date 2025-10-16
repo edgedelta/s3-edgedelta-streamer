@@ -267,9 +267,12 @@ func (p *FilePool) InjectMarker(markerID string, injectTime time.Time, markerTyp
 	// CRITICAL: Flush to disk so EdgeDelta can immediately see the marker
 	// lumberjack doesn't have a Flush method, but we can sync the file manually
 	if file, err := os.OpenFile(p.outputFilePath, os.O_WRONLY, 0); err == nil {
-		file.Sync() // Force OS to flush buffers to disk
+		if syncErr := file.Sync(); syncErr != nil {
+			fmt.Printf("DEBUG: Failed to sync file: %v\n", syncErr)
+		} else {
+			fmt.Printf("DEBUG: Synced file to disk\n")
+		}
 		file.Close()
-		fmt.Printf("DEBUG: Synced file to disk\n")
 	}
 
 	return nil

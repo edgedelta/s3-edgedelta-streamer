@@ -84,7 +84,10 @@ func (hs *HealthServer) healthHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		logger := logging.GetDefaultLogger()
+		logger.Error("Failed to encode health status", "error", err)
+	}
 }
 
 // readyHandler handles /ready requests (same as health for now)

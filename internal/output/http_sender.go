@@ -261,7 +261,7 @@ func (hs *HTTPSender) sendBatch(batch *Batch, endpoint string) error {
 	}
 
 	// Drain response body
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	return nil
 }
