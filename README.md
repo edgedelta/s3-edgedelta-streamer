@@ -143,6 +143,39 @@ EdgeDelta Processing & Backend
 - **Round-robin distribution**: 10 workers split evenly across endpoints
 - **State management**: File-based by default, Redis optional for distributed deployments
 
+### Pipeline Status
+
+![EdgeDelta Pipeline Status](assets/pipeline-status.jpg)
+
+The EdgeDelta pipeline (`zscaler-pipeline`) actively ingests data with the following characteristics:
+- **Data Volume**: 513 GB processed (+24.86% growth)
+- **Throughput**: 508 MB recent activity (+204% increase)
+- **Active Agents**: 3 agents processing in real-time
+
+## Performance Characteristics
+
+**Real-World Results:**
+- **Throughput**: 228 MB/minute (13.7 GB/hour)
+- **Processing Lag**: ~31 seconds average (target: < 60s)
+- **Resource Usage**: 14% CPU, 147 MB RAM (streamer)
+- **Data Loss**: Zero in steady state
+- **Files Processed**: 315K+ files
+- **Total Data**: 2.88 TB processed
+- **Latency**: 60ms average per file
+
+### Performance Dashboard
+
+![Performance Dashboard](assets/dashboard.jpg)
+
+The monitoring dashboard shows production performance metrics:
+- **S3 Files Processed**: 315.34K files successfully processed
+- **Total Bytes**: 2.88 TB of data streamed to EdgeDelta
+- **Processing Latency**: 60.94ms average per file
+- **Processing Lag**: 493.53ms (well under 60-second target)
+- **Batches Sent**: 3.5K batches/minute steady throughput
+- **HTTP Errors**: 195 total (minimal error rate over lifetime)
+- **Continuous Operation**: 15-second scan intervals with consistent performance
+
 ## Log Format Configuration
 
 The streamer supports **any log format** via configurable patterns - no code changes required. Define custom formats in `config.yaml` to support AWS services, applications, and custom log formats.
@@ -390,11 +423,6 @@ To support a new log format:
 - Handle timezone variations if present
 
 **Performance Note**: Filename-based timestamp extraction is **much faster** than content-based. Prefer filename patterns when possible.
-
-- **Throughput**: 228 MB/minute (13.7 GB/hour)
-- **Processing Lag**: ~31 seconds (target: < 60s)
-- **Resource Usage**: 14% CPU, 147 MB RAM (streamer)
-- **Data Loss**: Zero in steady state
 
 ## Monitoring
 
