@@ -1,0 +1,90 @@
+version: v3
+
+settings:
+  tag: zscaler-pipeline
+  log:
+    level: info
+  item_buffer_flush_interval: 1s
+  item_buffer_max_byte_limit: 100KB
+
+links:
+- from: ed_self_telemetry_input
+  to: edgedelta
+- from: http_logs
+  to: http_logs_multiprocessor
+- from: http_logs_multiprocessor
+  to: edgedelta_multiprocessor
+- from: http_logs_2
+  to: http_logs_2_multiprocessor
+- from: http_logs_2_multiprocessor
+  to: edgedelta_multiprocessor
+- from: edgedelta_multiprocessor
+  to: edgedelta
+- from: otlp_input_8d90
+  to: otlp_input_8d90_multiprocessor
+- from: otlp_input_8d90_multiprocessor
+  to: edgedelta_multiprocessor
+
+nodes:
+- name: ed_self_telemetry_input
+  type: ed_self_telemetry_input
+- name: http_logs
+  type: http_input
+  user_description: S3 Streamer HTTP Input
+  port: 8080
+  path: /
+- name: http_logs_multiprocessor
+  type: sequence
+  user_description: Source Multi Processor
+  processors:
+  - type: ottl_transform
+    metadata: '{"type":"ottl_transform","name":"Fix malformed JSON"}'
+    data_types:
+    - log
+    statements: |
+      replace_pattern(body, "^\\[", "") where IsMatch(body, "^\\[")
+      replace_pattern(body, "\\]$", "") where IsMatch(body, "\\]$")
+  - type: ottl_transform
+    metadata: '{"type":"ottl_transform","name":"Parse JSON"}'
+    condition: IsString(body) and IsMatch(body, "^\\{")
+    data_types:
+    - log
+    statements: set(attributes, ParseJSON(body))
+- name: http_logs_2
+  type: http_input
+  user_description: S3 Streamer HTTP Input 2
+  port: 8081
+  path: /
+- name: http_logs_2_multiprocessor
+  type: sequence
+  user_description: Source Multi Processor 2
+  processors:
+  - type: ottl_transform
+    metadata: '{"type":"ottl_transform","name":"Fix malformed JSON"}'
+    data_types:
+    - log
+    statements: |
+      replace_pattern(body, "^\\[", "") where IsMatch(body, "^\\[")
+      replace_pattern(body, "\\]$", "") where IsMatch(body, "\\]$")
+  - type: ottl_transform
+    metadata: '{"type":"ottl_transform","name":"Parse JSON"}'
+    condition: IsString(body) and IsMatch(body, "^\\{")
+    data_types:
+    - log
+    statements: set(attributes, ParseJSON(body))
+- name: edgedelta_multiprocessor
+  type: sequence
+  user_description: Destination Multi Processor
+- name: edgedelta
+  type: ed_output
+  user_description: Edge Delta
+- name: otlp_input_8d90
+  type: otlp_input
+  user_description: S3 Streamer OTLP Metrics Input
+  port: 4317
+  protocol: grpc
+  read_timeout: 1m0s
+- name: otlp_input_8d90_multiprocessor
+  type: sequence
+  user_description: Multi Processor
+

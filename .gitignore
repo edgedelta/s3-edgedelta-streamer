@@ -1,0 +1,68 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Build artifacts
+s3-edgedelta-streamer
+s3-edgedelta-streamer-http
+streamer
+main_http
+
+# Logs
+*.log
+streamer.log
+nohup.out
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# State files
+state.json
+*.pid
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker
+.dockerignore
+
+# Credentials (encrypted or not)
+credentials/
+*.key
+*.pem
+*.crt
+
+# Local development
+local/
+dev/

@@ -1,0 +1,195 @@
+s3:
+  bucket: "mgxm-collections-useast1-853533826717"
+  prefix: "/_weblog/feedname=Threat Team - Web/"
+  region: "us-east-1"
+
+http:
+  endpoints:                          # EdgeDelta HTTP input endpoints (load balanced)
+    - "http://localhost:8080"
+    - "http://localhost:8081"
+  batch_lines: 1000                   # Max 1000 lines per batch
+  batch_bytes: 1048576                # Max 1MB per batch (1024*1024)
+  flush_interval: 1s                  # Force flush every 1 second
+  workers: 10                         # 10 parallel HTTP senders (split across endpoints)
+  buffer_size: 50000                  # Line buffer size (increased from 10000 for better backpressure)
+  timeout: 30s                        # 30 second HTTP timeout
+  max_idle_conns: 100                 # Connection pool size
+  idle_conn_timeout: 90s              # Keep connections alive for 90s
+  tls_handshake_timeout: 10s          # TLS handshake timeout
+  response_header_timeout: 10s        # Response header timeout
+  expect_continue_timeout: 1s         # Expect continue timeout
+
+processing:
+  worker_count: 15
+  queue_size: 1000
+  scan_interval: 15s  # How often to poll S3
+  delay_window: 60s   # Process files at least 1min old
+  
+  # Configurable log format definitions - supports any log format via patterns
+  log_formats:
+    # AWS CloudTrail - JSON format with timestamps in filenames
+    - name: "cloudtrail"
+      filename_pattern: "*.json.gz"
+      timestamp_regex: "(\\d{4}\\d{2}\\d{2}T\\d{2}\\d{2}\\d{2}Z)"
+      timestamp_format: "20060102T150405Z"
+      content_type: "application/x-ndjson"
+      skip_header_lines: 0
+      
+    # ELB/ALB Access Logs - Space-separated with timestamp
+    - name: "elb_access"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z)"
+      timestamp_format: "2006-01-02T15:04:05.000000Z"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      field_separator: " "
+      
+    # CloudFront Access Logs - Tab-separated
+    - name: "cloudfront"
+      filename_pattern: "*.gz"
+      timestamp_regex: "(\\d{4}-\\d{2}-\\d{2}\\t\\d{2}:\\d{2}:\\d{2})"
+      timestamp_format: "2006-01-02\t15:04:05"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      field_separator: "\t"
+      
+    # VPC Flow Logs - Space-separated
+    - name: "vpc_flow"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z)"
+      timestamp_format: "2006-01-02T15:04:05.000000Z"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      field_separator: " "
+      
+    # S3 Access Logs - Space-separated
+    - name: "s3_access"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "\\[(\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+      timestamp_format: "02/Jan/2006:15:04:05 -0700"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      field_separator: " "
+      
+    # RDS MySQL Slow Query Logs
+    - name: "rds_mysql_slow"
+      filename_pattern: "slowquery/mysql-slowquery.log.*.gz"
+      timestamp_regex: "# Time: (\\d{6}\\s+\\d{1,2}:\\d{2}:\\d{2})"
+      timestamp_format: "060102 15:04:05"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      
+    # RDS PostgreSQL Logs
+    - name: "rds_postgres"
+      filename_pattern: "error/postgresql.log.*.gz"
+      timestamp_regex: "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} [A-Z]{3})"
+      timestamp_format: "2006-01-02 15:04:05 MST"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      
+    # Lambda Logs - JSON format
+    - name: "lambda"
+      filename_pattern: "*.json.gz"
+      timestamp_regex: "(\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{4}-\\d{6})"
+      timestamp_format: "2006/01/02/15/20060102-150405"
+      content_type: "application/x-ndjson"
+      skip_header_lines: 0
+      
+    # Application JSON logs with ISO timestamps
+    - name: "app_json_iso"
+      filename_pattern: "app-*.json.gz"
+      timestamp_regex: "\"timestamp\":\"([^\"]+)\""
+      timestamp_format: "2006-01-02T15:04:05.000Z"
+      content_type: "application/x-ndjson"
+      skip_header_lines: 0
+      
+    # Syslog RFC 3164 format
+    - name: "syslog_rfc3164"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "([A-Za-z]{3}\\s+\\d{1,2} \\d{2}:\\d{2}:\\d{2})"
+      timestamp_format: "Jan _2 15:04:05"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      
+    # Apache Combined Log Format
+    - name: "apache_combined"
+      filename_pattern: "access.log*.gz"
+      timestamp_regex: "\\[(\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+      timestamp_format: "02/Jan/2006:15:04:05 -0700"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      field_separator: " "
+      
+    # Nginx Access Logs
+    - name: "nginx_access"
+      filename_pattern: "access.log*.gz"
+      timestamp_regex: "\\[(\\d{2}/[A-Za-z]{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+      timestamp_format: "02/Jan/2006:15:04:05 -0700"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      
+    # JSON logs with Unix timestamps
+    - name: "json_unix"
+      filename_pattern: "*.json.gz"
+      timestamp_regex: "\"timestamp\":(\\d+)"
+      timestamp_format: "unix"
+      content_type: "application/x-ndjson"
+      skip_header_lines: 0
+      
+    # CSV logs with header
+    - name: "generic_csv"
+      filename_pattern: "*.csv.gz"
+      timestamp_regex: "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})"
+      timestamp_format: "2006-01-02 15:04:05"
+      content_type: "text/plain"
+      skip_header_lines: 1
+      field_separator: ","
+      
+    # Plain text logs with ISO timestamps
+    - name: "text_iso"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z?)"
+      timestamp_format: "2006-01-02T15:04:05Z"
+      content_type: "text/plain"
+      skip_header_lines: 0
+      
+    # Kubernetes logs (JSON)
+    - name: "kubernetes"
+      filename_pattern: "*.log.gz"
+      timestamp_regex: "\"timestamp\":\"([^\"]+)\""
+      timestamp_format: "2006-01-02T15:04:05.000000Z"
+      content_type: "application/x-ndjson"
+      skip_header_lines: 0
+  
+  # Which format to use: specific name or "auto" for detection
+  default_format: "auto"
+
+state:
+  file_path: "/var/lib/s3-streamer/state.json"
+  save_interval: 30s  # Persist state every 30s
+  
+  # Redis state storage (optional, falls back to file if disabled)
+  redis:
+    enabled: false     # Set to true to use Redis for state storage
+    host: "localhost"  # Redis host
+    port: 6379         # Redis port
+    password: ""       # Redis password (leave empty if no auth)
+    database: 0        # Redis database number (0-15)
+    key_prefix: "s3-streamer"  # Prefix for Redis keys
+
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json or text
+
+otlp:
+  enabled: true
+  endpoint: "localhost:4317"       # OTLP gRPC endpoint
+  export_interval: 10s             # Export metrics every 10 seconds
+  service_name: "s3-edgedelta-streamer"
+  service_version: "1.0.0"
+  insecure: true                   # Use insecure connection (no TLS)
+
+health:
+  enabled: true
+  address: ":8080"                 # Health check server address
+  path: "/health"                  # Health check endpoint path

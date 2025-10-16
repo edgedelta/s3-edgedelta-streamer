@@ -1,0 +1,91 @@
+version: v3
+
+settings:
+  tag: s3-streamer-markers
+  log:
+    level: info
+  item_buffer_flush_interval: 1s
+  item_buffer_max_byte_limit: 100KB
+
+links:
+  - from: ed_self_telemetry_input
+    to: edgedelta
+  - from: file_logs
+    to: file_logs_multiprocessor
+  - from: file_logs_multiprocessor
+    to: marker_processor
+  - from: marker_processor
+    to: edgedelta_multiprocessor
+  - from: edgedelta_multiprocessor
+    to: edgedelta
+
+nodes:
+  # Self Telemetry Input (for monitoring)
+  - name: ed_self_telemetry_input
+    type: ed_self_telemetry_input
+
+  # File Input - Monitor the streamer log file
+  - name: file_logs
+    type: file_input
+    user_description: S3 Streamer Log File
+    path: /var/log/s3-streamer/edgedelta.log
+
+  # Source Multiprocessor - Parse JSON logs
+  - name: file_logs_multiprocessor
+    type: sequence
+    user_description: Source Multi Processor
+    processors:
+      - type: ottl_transform
+        metadata: '{"type":"ottl_transform","name":"Fix malformed JSON"}'
+        data_types:
+          - log
+        statements: |
+          replace_pattern(body, "^\\[", "") where IsMatch(body, "^\\[")
+          replace_pattern(body, "\\]$", "") where IsMatch(body, "\\]$")
+      - type: ottl_transform
+        metadata: '{"type":"ottl_transform","name":"Parse JSON"}'
+        condition: IsString(body) and IsMatch(body, "^\\{")
+        data_types:
+          - log
+        statements: set(attributes, ParseJSON(body))
+
+  # Marker Processor - Filter and write to Redis
+  - name: marker_processor
+    type: sequence
+    user_description: Marker Processor
+    processors:
+      # Step 1: Filter for marker events and extract event data
+      - type: ottl_transform
+        condition: attributes["sourcetype"] == "edgedelta_marker"
+        statements: |
+          set(cache["event"], attributes["event"]) where attributes["event"] != nil
+
+      # Step 2: Write marker to Redis
+      - type: ottl_transform
+        statements: |
+          set(cache["redis_key"], Concat(["edgedelta:markers:", cache["event"]["marker_id"]], "")) where cache["event"]["marker_id"] != nil
+          set(cache["marker_value"], Concat(["{\"marker_id\":\"", cache["event"]["marker_id"], "\",\"inject_time\":", String(cache["event"]["inject_time"]), ",\"received_time\":", String(UnixSeconds(Now())), ",\"type\":\"", cache["event"]["type"], "\",\"hostname\":\"", cache["event"]["hostname"], "\"}"], "")) where cache["redis_key"] != nil
+          set(cache["redis_cmd"], [{"command": "set", "key": cache["redis_key"], "args": [cache["marker_value"], "EX", "300"], "outField": "result"}]) where cache["redis_key"] != nil
+          set(cache["redis_result"], EDXRedis({"url": "redis://localhost:6379", "deploymentType": "Standalone"}, cache["redis_cmd"])) where cache["redis_cmd"] != nil
+          set(attributes["marker_stored"], "true") where cache["redis_result"] != nil
+          set(attributes["marker_id"], cache["event"]["marker_id"]) where cache["event"]["marker_id"] != nil
+          set(attributes["redis_key"], cache["redis_key"]) where cache["redis_key"] != nil
+
+      # Step 3: Manual cleanup
+      - type: ottl_transform
+        statements: |
+          delete_key(cache, "event") where cache["event"] != nil
+          delete_key(cache, "redis_key") where cache["redis_key"] != nil
+          delete_key(cache, "marker_value") where cache["marker_value"] != nil
+          delete_key(cache, "redis_cmd") where cache["redis_cmd"] != nil
+          delete_key(cache, "redis_result") where cache["redis_result"] != nil
+
+  # Destination Multiprocessor - Processing before EdgeDelta output
+  - name: edgedelta_multiprocessor
+    type: sequence
+    user_description: Destination Multi Processor
+
+  # EdgeDelta Output
+  - name: edgedelta
+    type: ed_output
+    user_description: Edge Delta
