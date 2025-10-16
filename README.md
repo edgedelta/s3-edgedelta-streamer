@@ -15,6 +15,20 @@
 
 High-performance streaming pipeline that processes log files from AWS S3 and delivers them to EdgeDelta in real-time via HTTP. Supports multiple log formats including Zscaler, Cisco Umbrella, and custom formats with Redis-backed state management for distributed deployments.
 
+## Performance at Scale
+
+<p align="center">
+  <a href="assets/dashboard.jpg">
+    <img src="assets/dashboard.jpg" alt="Performance Dashboard" width="75%">
+  </a>
+</p>
+
+**Production Metrics:**
+- 315K+ files processed | 2.88 TB data streamed
+- 60ms average latency | 493ms processing lag (well under 60s target)
+- 228 MB/min sustained throughput (13.7 GB/hour)
+- Zero data loss in steady state | 24/7 continuous operation
+
 ## Installation
 
 ### Prerequisites
@@ -23,6 +37,7 @@ High-performance streaming pipeline that processes log files from AWS S3 and del
 2. **AWS credentials** with S3 read access (s3:GetObject, s3:ListBucket)
 3. **Root/sudo access** for installation
 4. **AWS CLI** installed (for credential validation)
+5. **Redis** (optional) - Required only for distributed deployments with multiple streamer instances
 
 ### Quick Install
 
@@ -151,30 +166,6 @@ The EdgeDelta pipeline (`zscaler-pipeline`) actively ingests data with the follo
 - **Data Volume**: 513 GB processed (+24.86% growth)
 - **Throughput**: 508 MB recent activity (+204% increase)
 - **Active Agents**: 3 agents processing in real-time
-
-## Performance Characteristics
-
-**Real-World Results:**
-- **Throughput**: 228 MB/minute (13.7 GB/hour)
-- **Processing Lag**: ~31 seconds average (target: < 60s)
-- **Resource Usage**: 14% CPU, 147 MB RAM (streamer)
-- **Data Loss**: Zero in steady state
-- **Files Processed**: 315K+ files
-- **Total Data**: 2.88 TB processed
-- **Latency**: 60ms average per file
-
-### Performance Dashboard
-
-![Performance Dashboard](assets/dashboard.jpg)
-
-The monitoring dashboard shows production performance metrics:
-- **S3 Files Processed**: 315.34K files successfully processed
-- **Total Bytes**: 2.88 TB of data streamed to EdgeDelta
-- **Processing Latency**: 60.94ms average per file
-- **Processing Lag**: 493.53ms (well under 60-second target)
-- **Batches Sent**: 3.5K batches/minute steady throughput
-- **HTTP Errors**: 195 total (minimal error rate over lifetime)
-- **Continuous Operation**: 15-second scan intervals with consistent performance
 
 ## Log Format Configuration
 
