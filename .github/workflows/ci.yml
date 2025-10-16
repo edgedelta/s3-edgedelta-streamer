@@ -58,9 +58,9 @@ jobs:
 
     - name: Build binaries
       run: |
-        GOOS=linux GOARCH=amd64 go build -o bin/s3-edgedelta-streamer-linux-amd64 ./cmd/streamer
-        GOOS=darwin GOARCH=amd64 go build -o bin/s3-edgedelta-streamer-darwin-amd64 ./cmd/streamer
-        GOOS=darwin GOARCH=arm64 go build -o bin/s3-edgedelta-streamer-darwin-arm64 ./cmd/streamer
+        GOOS=linux GOARCH=amd64 go build -o bin/s3-edgedelta-streamer-linux-amd64 ./cmd/streamer/main_http.go
+        GOOS=darwin GOARCH=amd64 go build -o bin/s3-edgedelta-streamer-darwin-amd64 ./cmd/streamer/main_http.go
+        GOOS=darwin GOARCH=arm64 go build -o bin/s3-edgedelta-streamer-darwin-arm64 ./cmd/streamer/main_http.go
 
     - name: Upload binaries
       uses: actions/upload-artifact@v4
